@@ -3,6 +3,7 @@
 
 var $$Map                   = require("bs-platform/lib/js/map.js");
 var Nact                    = require("reason-nact/src/nact.js");
+var Block                   = require("bs-platform/lib/js/block.js");
 var Curry                   = require("bs-platform/lib/js/curry.js");
 var Caml_obj                = require("bs-platform/lib/js/caml_obj.js");
 var Caml_builtin_exceptions = require("bs-platform/lib/js/caml_builtin_exceptions.js");
@@ -64,7 +65,7 @@ function updateContact(param, sender, contactId, contact) {
     ];
   Nact.Operators[/* <-< */0](sender, msg);
   return /* record */[
-          /* contacts */contacts,
+          /* contacts */nextContacts,
           /* seqNumber */param[/* seqNumber */1]
         ];
 }
@@ -122,6 +123,51 @@ var contactsService = Nact.spawn(/* Some */["contacts"], /* None */0, system, (f
       /* seqNumber */0
     ]);
 
+var createErlich = Nact.query(100, contactsService, (function (tempReference) {
+        return /* tuple */[
+                tempReference,
+                /* CreateContact */Block.__(0, [/* record */[
+                      /* name */"Erlich Bachman",
+                      /* email */"erlich@aviato.com"
+                    ]])
+              ];
+      }));
+
+function createDinesh() {
+  return Nact.query(100, contactsService, (function (tempReference) {
+                return /* tuple */[
+                        tempReference,
+                        /* CreateContact */Block.__(0, [/* record */[
+                              /* name */"Dinesh Chugtai",
+                              /* email */"dinesh@piedpiper.com"
+                            ]])
+                      ];
+              }));
+}
+
+function findDinsheh(param) {
+  var contactId = param[0];
+  return Nact.query(100, contactsService, (function (tempReference) {
+                return /* tuple */[
+                        tempReference,
+                        /* FindContact */Block.__(3, [contactId])
+                      ];
+              }));
+}
+
+function $great$eq$great(promise1, promise2) {
+  return promise1.then(Curry.__1(promise2));
+}
+
+var promise1 = createErlich.then(createDinesh);
+
+var promise1$1 = promise1.then(findDinsheh);
+
+promise1$1.then((function (result) {
+        console.log(result);
+        return Promise.resolve(/* () */0);
+      }));
+
 exports.ContactIdCompare = ContactIdCompare;
 exports.ContactIdMap     = ContactIdMap;
 exports.createContact    = createContact;
@@ -130,4 +176,8 @@ exports.updateContact    = updateContact;
 exports.findContact      = findContact;
 exports.system           = system;
 exports.contactsService  = contactsService;
+exports.createErlich     = createErlich;
+exports.createDinesh     = createDinesh;
+exports.findDinsheh      = findDinsheh;
+exports.$great$eq$great  = $great$eq$great;
 /* ContactIdMap Not a pure module */

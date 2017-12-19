@@ -167,7 +167,7 @@ let findContact = ({contacts, seqNumber}, sender, contactId) => {
 let system = start();
 
 /* define the actor which will execute with the above functions depending on which Variant we use */
-let contactService =
+let contactsService =
   /* optionally name the actor */
   spawn(
     ~name="contacts",
