@@ -145,3 +145,46 @@ let updateContact = ({contacts, seqNumber}, sender, contactId, contact) => {
   /* NACTOR ref and type def */
   {contacts, seqNumber}
 };
+
+/* define () to handle FindContact Variant Constructor which takes contactId as arg. A stateful Nactor
+   () require state: contactStateService, a Nactor. ref: sender, this actor needs a contactid to find the contact.
+   */
+let findContact = ({contacts, seqNumber}, sender, contactId) => {
+  /* we dont have to change state here so no need to define the next state so we only need to create
+     a () that produces a msg for finding the ID */
+  let msg =
+    try (contactId, Success(ContactIdMap.find(contactId, contacts))) {
+    | Not_found => (contactId, NotFound)
+    };
+  /* define Nactor executor */
+  sender <-< msg;
+  /* context, type */
+  {contacts, seqNumber}
+};
+
+/* put it all together to create the actor. Actor require open Nact, ref NACT system(), spawn, def ref, and call
+   NACTO or dispatch */
+let system = start();
+
+/* define the actor which will execute with the above functions depending on which Variant we use */
+let contactService =
+  /* optionally name the actor */
+  spawn(
+    ~name="contacts",
+    /* ref system which we started */
+    system,
+    /* NACTO: pass in state, nactor ref and context using switch for each of our variants */
+    (state, (sender, msg), _) =>
+      (
+        switch msg {
+        /*  Call the CreateContact Variant, pass in contact actorRef,  context for each */
+        | CreateContact(contact) => createContact(state, sender, contact)
+        | DeleteContact(contactId) => removeContact(state, sender, contactId)
+        | UpdateContact(contactId, contact) => updateContact(state, sender, contactId, contact)
+        | FindContact(contactId) => findContact(state, sender, contactId)
+        }
+      )
+      /* resolve state */
+      |> Js.Promise.resolve,
+    {contacts: ContactIdMap.empty, seqNumber: 0}
+  );
