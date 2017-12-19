@@ -4,12 +4,6 @@ open Nact;
 
 let system = start();
 
-/* to create an actor you have to spawn it, this example has no state
-   so we are using spawnStateless(). First unnamed arg to spawnStateless is the parent, here
-   the actor system or "system", unnamed b/c no ~. 2nd '_'/() arg is invoked when a message
-   is recieved. Then named arg, ~name is optional, the system will assign a name to the arg
-   if it is omitted,
-   dispatch is used to communicate with greeter. */
 type greetingMsg = {name: string};
 
 let greeter =
