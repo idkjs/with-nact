@@ -42,3 +42,32 @@ If you use `vscode`, Press `Windows + Shift + B` it will build automatically
 - see: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/resolve
 - The Promise.resolve(value) method returns a Promise object that is resolved with the given value.
 
+## Querying with NACT
+- see: https://github.com/ncthbrt/reason-nact#querying
+
+- NACT is a non-blocking system while REST and RPC systems on the frontend are blocking, so NACT provides a Query method to bridge the gap.
+
+- Similar to `dispatch`, `query` pushes and msg to an actors mailbox but differs by also creating a temporary actor which is passed into a function which the message to return to the target actor. When the temp actor recieves a message, the promised recieved by the query resolves.
+
+## Query Timeouts
+
+- In addition to the message, query also takes in a timeout value measured in milliseconds. If a query takes longer than this time to resolve, it times out and the promise is rejected. A time bounded query is very important in a production system; it ensures that a failing subsystem does not cause cascading faults as queries queue up and stress available system resources.
+
+## Address Book with NACT Queries
+
+- AddressBook API requirements: 
+- Be able to create a new contact
+- Be able to fetch all contacts
+- Be able to fetch a specifiec contact
+- Be able to update an existing contact
+- Be able to delete a contact
+
+## Address Book Steps
+
+- actors are message driven, define message types we will need to accomplish the API requirements. We will need a contactId, contact, contactResponseMsg, and a contactMsg.
+
+- message shape: we need to know the shape of the contact actor state.
+
+- we need functions to handle each message type.
+
+- after we do all of the above steps, we will have the infrastructure to create an actor.
