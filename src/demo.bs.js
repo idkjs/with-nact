@@ -9,7 +9,7 @@ var greeter = Nact.spawnStateless(/* Some */["greeter"], /* None */0, system, (f
         return Promise.resolve((console.log("Hello " + param[/* name */0]), /* () */0));
       }));
 
-Nact.dispatch(greeter, /* record */[/* name */"Erlich Bachman"]);
+Nact.Operators[/* >-> */1](/* record */[/* name */"Erlich Bachman"], greeter);
 
 exports.system  = system;
 exports.greeter = greeter;

@@ -20,4 +20,11 @@ let greeter =
   );
 
 /* dispatch is used to communicate with greeter. */
-dispatch(greeter, {name: "Erlich Bachman"});
+/* dispatch(greeter, {name: "Erlich Bachman"}); */
+/* dispatching with Nact.Operators's */
+open Nact.Operators;
+
+/* ex 1 */
+/* greeter <-< {name: "Erlich Bachman"}; */
+/* ex 2 */
+{name: "Erlich Bachman"} >-> greeter;
