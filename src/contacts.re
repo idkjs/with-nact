@@ -37,7 +37,7 @@ type contactMsg =
   /* when we create a contact, we should pass the function the new contact values */
   | CreateContact(contact)
   /* when we delete, we should pass the contactID that we want to find and delete */
-  | DeleteContact(contactId)
+  | RemoveContact(contactId)
   /* we should pass the id to find it and the new info for the contact */
   | UpdateContact(contactId, contact)
   /* pass the id so we can find it */
@@ -60,7 +60,7 @@ module ContactIdMap = Map.Make(ContactIdCompare);
 
 /* create type to hold all contacts state and create sequential id for each
    contact monotically, see: https://en.wikipedia.org/wiki/Monotonic_function */
-type contactServiceState = {
+type contactsServiceState = {
   /* define contacts state type as ContactIdMap and pass in a contact value? */
   contacts: ContactIdMap.t(contact),
   seqNumber: int
@@ -143,7 +143,7 @@ let updateContact = ({contacts, seqNumber}, sender, contactId, contact) => {
   /* execute this Nactor if this () is called */
   sender <-< msg;
   /* NACTOR ref and type def */
-  {contacts, seqNumber}
+  {contacts: nextContacts, seqNumber}
 };
 
 /* define () to handle FindContact Variant Constructor which takes contactId as arg. A stateful Nactor
@@ -179,7 +179,7 @@ let contactsService =
         switch msg {
         /*  Call the CreateContact Variant, pass in contact actorRef,  context for each */
         | CreateContact(contact) => createContact(state, sender, contact)
-        | DeleteContact(contactId) => removeContact(state, sender, contactId)
+        | RemoveContact(contactId) => removeContact(state, sender, contactId)
         | UpdateContact(contactId, contact) => updateContact(state, sender, contactId, contact)
         | FindContact(contactId) => findContact(state, sender, contactId)
         }
@@ -188,3 +188,38 @@ let contactsService =
       |> Js.Promise.resolve,
     {contacts: ContactIdMap.empty, seqNumber: 0}
   );
+
+let createErlich =
+  query(
+    ~timeout=100,
+    contactsService,
+    (tempReference) => (
+      tempReference,
+      CreateContact({name: "Erlich Bachman", email: "erlich@aviato.com"})
+    )
+  );
+
+let createDinesh = (_) =>
+  query(
+    ~timeout=100,
+    contactsService,
+    (tempReference) => (
+      tempReference,
+      CreateContact({name: "Dinesh Chugtai", email: "dinesh@piedpiper.com"})
+    )
+  );
+
+let findDinsheh = ((contactId, _)) =>
+  query(~timeout=100, contactsService, (tempReference) => (tempReference, FindContact(contactId)));
+
+let (>=>) = (promise1, promise2) => Js.Promise.then_(promise2, promise1);
+
+createErlich
+>=> createDinesh
+>=> findDinsheh
+>=> (
+  (result) => {
+    Js.log(result);
+    Js.Promise.resolve()
+  }
+);
