@@ -178,3 +178,45 @@ let contactsService =
       },
       StringMap.empty
     );
+
+/* test query functions */
+let createErlich =
+  query(
+    ~timeout=100,
+    contactsService,
+    (tempReference) => (
+      tempReference,
+      "0",
+      CreateContact({name: "Erlich Bachman", email: "erlich@aviato.com"})
+    )
+  );
+
+let createDinesh = (_) =>
+  query(
+    ~timeout=100,
+    contactsService,
+    (tempReference) => (
+      tempReference,
+      "1",
+      CreateContact({name: "Dinesh Chugtai", email: "dinesh@piedpiper.com"})
+    )
+  );
+
+let findDinsheh = ((contactId, _)) =>
+  query(
+    ~timeout=100,
+    contactsService,
+    (tempReference) => (tempReference, "1", FindContact(contactId))
+  );
+
+let (>=>) = (promise1, promise2) => Js.Promise.then_(promise2, promise1);
+
+createErlich
+>=> createDinesh
+>=> findDinsheh
+>=> (
+  (result) => {
+    Js.log(result);
+    Js.Promise.resolve()
+  }
+);
