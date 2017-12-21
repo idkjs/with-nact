@@ -18,7 +18,8 @@ let greeter =
 /* dispatching with Nact.Operators's */
 open Nact.Operators;
 
+/* these are the same. they do the same thing */
 /* ex 1 */
-/* greeter <-< {name: "Erlich Bachman"}; */
+greeter <-< {name: "Erlich Bachman"};
 /* ex 2 */
-{name: "Erlich Bachman"} >-> greeter;
+/* {name: "Erlich Bachman"} >-> greeter; */
