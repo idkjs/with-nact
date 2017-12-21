@@ -3,8 +3,40 @@ open Nact;
 
 open Nact.Operators;
 
+/* module using String Pervasive. See:https://caml.inria.fr/pub/docs/manual-ocaml/libref/Pervasives.html
+   and https://caml.inria.fr/pub/docs/manual-ocaml/libref/String.html. A string is an immutable data structure
+   that contains a fixed-length sequence of (single-byte) characters. Each character can be accessed in
+   constant time through its index. */
+module StringCompare = {
+  type t = string;
+  let compare = String.compare;
+};
+
+/*  Map.Make is a Functor that builds an implementation of the map structure given a totally ordered type.
+       see: https://caml.inria.fr/pub/docs/manual-ocaml/libref/Map.Make.html
+       In OCaml and Standard ML, a functor is a higher-order module (a module parameterized by one or more other modules),
+    often used to define type-safe abstracted algorithms and data structures. Here the other modules are StringCompare and
+    Map.Make.
+       */
+module StringMap = Map.Make(StringCompare);
+
 type contactId =
   | ContactId(int);
+
+/* describe shape of contact actors state using a ContactIdMap Module
+   to hold the list of contacts */
+module ContactIdCompare = {
+  /* define the type req'd for this module */
+  type t = contactId;
+  /* define function to compare id's. Name the function, define the args it takes,
+     then call the function on the passed in args */
+  let compare = (ContactId(left), ContactId(right)) => compare(left, right);
+};
+
+/* define module, that when called takes the input from ContactIDCompare and runs Map.Make on it.
+   Map.Make is a Functor that builds an implementation of the map structure given a totally ordered type.
+   see: https://caml.inria.fr/pub/docs/manual-ocaml/libref/Map.Make.html */
+module ContactIdMap = Map.Make(ContactIdCompare);
 
 type contact = {
   name: string,
@@ -24,21 +56,6 @@ type contactMsg =
   | UpdateContact(contactId, contact)
   /* pass the id so we can find it */
   | FindContact(contactId);
-
-/* describe shape of contact actors state using a ContactIdMap Module
-   to hold the list of contacts */
-module ContactIdCompare = {
-  /* define the type req'd for this module */
-  type t = contactId;
-  /* define function to compare id's. Name the function, define the args it takes,
-     then call the function on the passed in args */
-  let compare = (ContactId(left), ContactId(right)) => compare(left, right);
-};
-
-/* define module, that when called takes the input from CIC and runs Map.Make on it.
-   Map.Make is a Functor that builds an implementation of the map structure given a totally ordered type.
-   see: https://caml.inria.fr/pub/docs/manual-ocaml/libref/Map.Make.html */
-module ContactIdMap = Map.Make(ContactIdCompare);
 
 /* create type to hold all contacts state and create sequential id for each
    contact monotically, see: https://en.wikipedia.org/wiki/Monotonic_function */
@@ -131,61 +148,33 @@ let createContactsService = (parent, userId) =>
     {contacts: ContactIdMap.empty, seqNumber: 0}
   );
 
-/* define the actor which will execute with the above functions depending on which Variant we use */
+/* define parent contact service that checks if it has a child with the passed userId as they key,
+   if it doesnt not, it spawns the child actor. Here we aren't passing a named actor. */
 let contactsService =
   /* optionally name the actor */
-  spawn(
-    ~name="contacts",
+  spawn
     /* ref system which we started */
-    system,
-    /* NACTO: pass in state, nactor ref and context using switch for each of our variants */
-    (state, (sender, msg), _) =>
-      (
-        switch msg {
-        /*  Call the CreateContact Variant, pass in contact actorRef,  context for each */
-        | CreateContact(contact) => createContact(state, sender, contact)
-        | RemoveContact(contactId) => removeContact(state, sender, contactId)
-        | UpdateContact(contactId, contact) => updateContact(state, sender, contactId, contact)
-        | FindContact(contactId) => findContact(state, sender, contactId)
-        }
-      )
-      /* resolve state */
-      |> Js.Promise.resolve,
-    /* dispatch actor message */
-    {contacts: ContactIdMap.empty, seqNumber: 0}
-  );
-
-let createErlich =
-  query(
-    ~timeout=100,
-    contactsService,
-    (tempReference) => (
-      tempReference,
-      CreateContact({name: "Erlich Bachman", email: "erlich@aviato.com"})
-    )
-  );
-
-let createDinesh = (_) =>
-  query(
-    ~timeout=100,
-    contactsService,
-    (tempReference) => (
-      tempReference,
-      CreateContact({name: "Dinesh Chugtai", email: "dinesh@piedpiper.com"})
-    )
-  );
-
-let findDinsheh = ((contactId, _)) =>
-  query(~timeout=100, contactsService, (tempReference) => (tempReference, FindContact(contactId)));
-
-let (>=>) = (promise1, promise2) => Js.Promise.then_(promise2, promise1);
-
-createErlich
->=> createDinesh
->=> findDinsheh
->=> (
-  (result) => {
-    Js.log(result);
-    Js.Promise.resolve()
-  }
-);
+    (
+      system,
+      /* Pass children as state so we can check the state for the current userId.
+         2nd arg is the expected type and message we want to send.
+         3rd, calls the function after we find the switch variant we want to use. */
+      (children, (sender, userId, msg), ctx) => {
+        let potentialChild =
+          try (Some(StringMap.find(userId, children))) {
+          | _ => None
+          };
+        Js.Promise.resolve(
+          switch potentialChild {
+          | Some(child) =>
+            dispatch(child, (sender, msg));
+            children
+          | None =>
+            let child = createContactsService(ctx.self, userId);
+            dispatch(child, (sender, msg));
+            StringMap.add(userId, child, children)
+          }
+        )
+      },
+      StringMap.empty
+    );
