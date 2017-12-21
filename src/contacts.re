@@ -158,7 +158,7 @@ let findContact = ({contacts, seqNumber}, sender, contactId) => {
     };
   /* define Nactor executor */
   sender <-< msg;
-  /* context, type */
+  /* dispatch actor message, pass type expected by actor function */
   {contacts, seqNumber}
 };
 
@@ -186,6 +186,7 @@ let contactsService =
       )
       /* resolve state */
       |> Js.Promise.resolve,
+    /* dispatch actor message */
     {contacts: ContactIdMap.empty, seqNumber: 0}
   );
 
