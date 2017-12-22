@@ -3,27 +3,11 @@ open Nact;
 
 open Nact.Operators;
 
-/* open NactPostgres; */
-let (>=>) = (promise1, promise2) => Js.Promise.then_(promise2, promise1);
-
-/* [@bs.module "nact/test/mock-persistence-engine"] [@bs.new]
-   external createMockPersistenceEngine : unit => persistenceEngine =
-     "MockPersistenceEngine"; */
-/* module using String Pervasive. See:https://caml.inria.fr/pub/docs/manual-ocaml/libref/Pervasives.html
-   and https://caml.inria.fr/pub/docs/manual-ocaml/libref/String.html. A string is an immutable data structure
-   that contains a fixed-length sequence of (single-byte) characters. Each character can be accessed in
-   constant time through its index. */
 module StringCompare = {
   type t = string;
   let compare = String.compare;
 };
 
-/*  Map.Make is a Functor that builds an implementation of the map structure given a totally ordered type.
-       see: https://caml.inria.fr/pub/docs/manual-ocaml/libref/Map.Make.html
-       In OCaml and Standard ML, a functor is a higher-order module (a module parameterized by one or more other modules),
-    often used to define type-safe abstracted algorithms and data structures. Here the other modules are StringCompare and
-    Map.Make.
-       */
 module StringMap = Map.Make(StringCompare);
 
 type contactId =
@@ -39,9 +23,6 @@ module ContactIdCompare = {
   let compare = (ContactId(left), ContactId(right)) => compare(left, right);
 };
 
-/* define module, that when called takes the input from ContactIDCompare and runs Map.Make on it.
-   Map.Make is a Functor that builds an implementation of the map structure given a totally ordered type.
-   see: https://caml.inria.fr/pub/docs/manual-ocaml/libref/Map.Make.html */
 module ContactIdMap = Map.Make(ContactIdCompare);
 
 type contact = {
@@ -113,32 +94,14 @@ let findContact = ({contacts, seqNumber}, sender, contactId) => {
   {contacts, seqNumber}
 };
 
-/* - CREATE PARENT HIERARCHY
-   - open Nact; and/or Nact.Operators;
-      - call system to start it actor `let system = start()`
-      - define type that actor will expect if not defined elsewhere
-      - define parent actor function and call spawn type of function, spawnStateless for stateless actors
-      or just spawn for spawnStateful. parent is stateful(?)
-      - 1st arg is optional name of actor as string, `~name="someActor"`
-      - 2nd arg is unnamed reference to 'parent'
-      - 3rd arg is unnamed arg that takes a ref to a defined type that is expected, the "_" to
-      call the actor function with follows after fat arrow. oCaml will infer the type if it can.
-      - call the actor with dispatch(actor, input) or
-      using Nact.Operator syntax `actor <-< { sometype: value }`
-      - in stateful components, the first arg to the execution function is state,
-       2nd is type ref, and the third is the context/ctx.
-      */
-/* define actor */
-/* let system = start(); */
 let system = start(~persistenceEngine=NactPostgres.create("postgresql://localhost:5432"), ());
 
-/* Create a parent to route requests/message to thh correct child,
-   args are parent and child. Pass parent where you would pass system previosly
-   */
 let createContactsService = (parent, userId) =>
   spawnPersistent(
     ~key="contacts" ++ userId,
     ~name=userId,
+    ~shutdownAfter=15 * minutes,
+    ~snapshotEvery=10 * messages,
     parent,
     /* state (always first in stateful), sender/message is ref to types this actor expects, _ calls the () in RML  */
     (state, (sender, msg), {persist}) =>
@@ -161,17 +124,12 @@ let createContactsService = (parent, userId) =>
     {contacts: ContactIdMap.empty, seqNumber: 0}
   );
 
-/* define parent contact service that checks if it has a child with the passed userId as they key,
-   if it doesnt not, it spawns the child actor. Here we aren't passing a named actor. */
 let contactsService =
   /* optionally name the actor */
   spawn
     /* ref system which we started */
     (
       system,
-      /* Pass children as state so we can check the state for the current userId.
-         2nd arg is the expected type and message we want to send.
-         3rd, calls the function after we find the switch variant we want to use. */
       (children, (sender, userId, msg), ctx) => {
         let potentialChild =
           try (Some(StringMap.find(userId, children))) {
@@ -222,10 +180,28 @@ let findDinsheh = ((contactId, _)) =>
     (tempReference) => (tempReference, "1", FindContact(contactId))
   );
 
+let createDinesh2 = (_) =>
+  query(
+    ~timeout=100,
+    contactsService,
+    (tempReference) => (
+      tempReference,
+      "1",
+      CreateContact({name: "Dinesh Chugtai", email: "dinesh@piedpiper.com"})
+    )
+  );
+
+let findDinsheh2 = ((contactId, _)) =>
+  query(
+    ~timeout=100,
+    contactsService,
+    (tempReference) => (tempReference, "1", FindContact(contactId))
+  );
+
 let (>=>) = (promise1, promise2) => Js.Promise.then_(promise2, promise1);
 
 createErlich
->=> createDinesh
+>=> createDinesh2
 >=> findDinsheh
 >=> (
   (result) => {
