@@ -1,4 +1,4 @@
-# Basic Reason Template
+# REASON-NACT Tutorial
 
 Hello! This project allows you to quickly get started with Reason and BuckleScript. If you wanted a more sophisticated version, try the `react` template (`bsb -theme react -init .`).
 
@@ -13,9 +13,25 @@ npm run build
 npm run watch
 ```
 
-
 # Editor
 If you use `vscode`, Press `Windows + Shift + B` it will build automatically
+
+## NACT Hierarchy Overview
+
+- Actos are arranged hierarchically
+- They can create child actors of their own
+- Every actor has a parent
+- The lifecycle of an actor is tied to its parent therefore if a parent actor stops, all its children actors stop.
+- By exploiting the actor hierarchy, you can enforce seperation of concerns and encapsulate system functionality which help deal with system failures and system shutdown.
+
+
+## Refactoring Contacts Module to use Hierarchy
+
+- Goal is to support multiple users of the contacts module. We need to do 3 things to achieve this.
+- 1. Create a parent to route requests/message to thh correct child see [createContactsService](https://github.com/ncthbrt/reason-nact/blob/a4e316a03910a881c253dadcf8e884d7138157cf/examples/multi_user_contacts.re#L84) code block.
+- 2. Modify Contacts.re so we can parameterize its parent and name
+- 3. Add a user id to the path of each API endpoint and add a userId into each message.
+
 
 ## creating actors generally
 

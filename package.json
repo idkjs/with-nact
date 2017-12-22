@@ -15,6 +15,7 @@
     "bs-platform": "^2.1.0"
   },
   "dependencies": {
-    "reason-nact": "^1.0.1"
+    "reason-nact": "^1.0.1",
+    "reason-nact-postgres": "^1.0.0"
   }
 }
